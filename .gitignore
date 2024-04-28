@@ -3,6 +3,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Jupyter Notebook
+scripts/.ipython
+scripts/.ipynb_checkpoints
+scripts/.jupyter
+scripts/.local
+scripts/.npm
+
+# MacOS
+.DS_Store
 # C extensions
 *.so
 
