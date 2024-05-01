@@ -3,9 +3,12 @@ import psycopg2
 import requests
 import simplejson as json
 from confluent_kafka import SerializingProducer
+from tqdm import tqdm
+import sys
 
 BASE_URL = 'https://randomuser.me/api/?nat=gb'
 PARTIES = ["ECORP Party", "SEP Party", "SV Party"]
+NUM_VOTERS = 1000
 
 random.seed(12)
 def create_tables(conn, cur):
@@ -114,7 +117,8 @@ def delivery_report(err, msg):
     if err is not None:
         print(f"Message delivery failed: {err}")
     else:
-        print(f"Message delivered to {msg.topic()} [{msg.partition()}]")
+        pass
+        #print(f"Message delivered to {msg.topic()} [{msg.partition()}]")
 
 if __name__ == "__main__":
     producer = SerializingProducer({'bootstrap.servers': 'broker:29092'})
@@ -144,20 +148,30 @@ if __name__ == "__main__":
                     candidate['biography'],
                     candidate['campaign_platform'], candidate['photo_url']))
                 conn.commit()
+        with tqdm(total=NUM_VOTERS) as pbar:
 
-        for i in range(1000):
-            voter_data = generate_voter_data()
-            insert_voters(conn, cur, voter_data)
+            for i in range(NUM_VOTERS):
+                try:
+                    voter_data = generate_voter_data()
+                    insert_voters(conn, cur, voter_data)
 
-            producer.produce(
-                "voters_topic",
-                key=voter_data["voter_id"],
-                value=json.dumps(voter_data),
-                on_delivery=delivery_report
-            )
+                    producer.produce(
+                        "voters_topic",
+                        key=voter_data["voter_id"],
+                        value=json.dumps(voter_data),
+                        on_delivery=delivery_report
+                    )
 
-            print(f"Produced voter {i}, data: {voter_data}")
-            producer.flush()
+                    
+                    producer.flush()
+
+                    pbar.set_description_str(f"Produced voter {i}, name: {voter_data['voter_name']}")
+                    pbar.update(1)
+                    
+                except Exception as e:
+                    print("Error: {}".format(e))
+                    conn.rollback()
+                    continue
 
     except Exception as e:
         print(e)

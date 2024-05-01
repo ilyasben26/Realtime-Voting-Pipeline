@@ -2,18 +2,22 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col, to_json, struct
 from pyspark.sql.functions import sum as _sum
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType
+from time import sleep
+
+TIMEOUT = 300
 
 if __name__ == "__main__":
     # Initialize SparkSession
     spark = (SparkSession.builder
              .appName("ElectionAnalysis")
-             .master("local[*]")  # Use local Spark execution with all available cores
-             .config("spark.driver.bindAddress", "localhost")
+             .master("spark://spark-master:7077")  
+             .config("spark.driver.bindAddress", "pyspark")
              .config("spark.jars.packages",
-                     "org.apache.spark:spark-sql-kafka-0-10_2.13:3.5.1")  # Spark-Kafka integration # org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0
+                     "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0")  # Spark-Kafka integration # org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0 org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.1 org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0
              .config("spark.jars",
                      "postgresql-42.7.3.jar")  # PostgreSQL driver
              .config("spark.sql.adaptive.enabled", "false")  # Disable adaptive query execution
+
              .getOrCreate())
 
     # Define schemas for Kafka topics
@@ -49,7 +53,7 @@ if __name__ == "__main__":
     # Read data from Kafka 'votes_topic' and process it
     votes_df = spark.readStream \
         .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
+        .option("kafka.bootstrap.servers", "broker:29092") \
         .option("subscribe", "votes_topic") \
         .option("startingOffsets", "earliest") \
         .load() \
@@ -67,28 +71,22 @@ if __name__ == "__main__":
                                                     "photo_url").agg(_sum("vote").alias("total_votes"))
     turnout_by_location = enriched_votes_df.groupBy("address.state").count().alias("total_votes")
 
-    # Start the query to print the votes_per_candidate DataFrame to the console
-    query = votes_per_candidate.writeStream \
-        .outputMode("complete") \
-        .format("console") \
+
+
+
+    # Write aggregated data to Kafka topics ('aggregated_votes_per_candidate')
+    votes_per_candidate_to_kafka = votes_per_candidate \
+        .selectExpr("CAST(candidate_id AS STRING) AS key", 
+                    "to_json(struct(*)) AS value") \
+        .writeStream \
+        .format("kafka") \
+        .option("kafka.bootstrap.servers", "broker:29092") \
+        .option("topic", "aggregated_votes_per_candidate") \
+        .option("checkpointLocation", "./checkpoints/checkpoint1") \
+        .outputMode("update") \
         .start()
 
-    # Wait for the query to finish
-    query.awaitTermination()
-
-
-    # TODO: fix writing
-    # Write aggregated data to Kafka topics ('aggregated_votes_per_candidate')
-    #votes_per_candidate_to_kafka = votes_per_candidate("CAST(key AS STRING)", "CAST(value)") \
-    #    .writeStream \
-    #    .format("kafka") \
-    #    .option("kafka.bootstrap.servers", "localhost:9092") \
-    #    .option("topic", "aggregated_votes_per_candidate") \
-    #    .option("checkpointLocation", "./checkpoints/checkpoint1") \
-    #    .outputMode("update") \
-    #    .start()
-
-
+    sleep(TIMEOUT)
 
     # Await termination for the streaming queries
-    #votes_per_candidate_to_kafka.awaitTermination()
+    votes_per_candidate_to_kafka.stop()

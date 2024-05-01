@@ -4,7 +4,7 @@ confluent-kafka==2.3.0
 idna==3.7
 psycopg2-binary==2.9.9
 py4j==0.10.9.7
-pyspark==3.5.1
 requests==2.31.0
 simplejson==3.19.2
 urllib3==2.2.1
+tqdm==4.66.2

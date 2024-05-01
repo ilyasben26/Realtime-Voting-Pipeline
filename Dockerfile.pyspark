@@ -1,0 +1,19 @@
+FROM jupyter/all-spark-notebook
+
+# Set environment variable to grant sudo permissions
+ENV GRANT_SUDO=yes
+
+
+# Switch to root user to perform operations requiring sudo
+USER root
+RUN apt update 
+RUN apt install zip 
+
+
+RUN curl -s "https://get.sdkman.io" | bash 
+# Install Java using SDKMAN
+RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java 8.0.302-zulu"
+
+
+# Switch back to jovyan user
+USER jovyan

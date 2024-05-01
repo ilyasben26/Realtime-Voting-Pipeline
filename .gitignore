@@ -9,6 +9,12 @@ scripts/.ipynb_checkpoints
 scripts/.jupyter
 scripts/.local
 scripts/.npm
+scripts/.ivy2
+scripts/.scala_history
+
+# PySpark
+scripts/checkpoints/checkpoint1/*
+scripts/checkpoints/checkpoint2/*
 
 # MacOS
 .DS_Store

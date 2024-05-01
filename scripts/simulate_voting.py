@@ -9,7 +9,7 @@ from confluent_kafka import Consumer, KafkaException, KafkaError, SerializingPro
 from generate_data import delivery_report
 
 conf = {
-    'bootstrap.servers': 'localhost:9092',
+    'bootstrap.servers': 'broker:29092',
 }
 
 consumer = Consumer(conf | {
@@ -46,7 +46,7 @@ def consume_messages():
 
 
 if __name__ == "__main__":
-    conn = psycopg2.connect("host=localhost dbname=voting user=postgres password=postgres")
+    conn = psycopg2.connect("host=postgres dbname=voting user=postgres password=postgres")
     cur = conn.cursor()
 
     # candidates

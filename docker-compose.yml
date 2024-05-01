@@ -68,6 +68,7 @@ services:
 
   spark-master:
     image: bitnami/spark:latest
+    container_name: spark-master
     command: bin/spark-class org.apache.spark.deploy.master.Master
     ports:
       - "9090:8080"
@@ -82,15 +83,17 @@ services:
       - spark-master
     environment:
       SPARK_MODE: worker
-      SPARK_WORKER_CORES: 2
+      SPARK_WORKER_CORES: 4
       SPARK_WORKER_MEMORY: 1g
       SPARK_MASTER_URL: spark://spark-master:7077
     networks:
       - realtime-voting-network
 
-  pyspark-notebook:
-    image: "jupyter/all-spark-notebook"
-    container_name: pyspark-notebook
+  pyspark:
+    build:
+      context: .
+      dockerfile: Dockerfile.pyspark
+    container_name: pyspark
     volumes:
       - ./scripts:/home/jovyan
     ports:
