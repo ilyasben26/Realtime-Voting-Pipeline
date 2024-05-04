@@ -1,30 +1,19 @@
 import subprocess
-import re
 import time
-import os
 
 # Start the containers
 subprocess.run(["docker-compose", "up", "-d", "--build"], check=True)
 
-print("Waiting for pyspark-notebook container to be healthy...")
+# Function to check if a container is healthy
+def is_container_healthy(container_name):
+    result = subprocess.run(["docker", "inspect", "--format='{{.State.Health.Status}}'", container_name], capture_output=True, text=True)
+    return result.stdout.strip() == "'healthy'"
 
-# Wait for the notebook container to be healthy
-while True:
-    health = subprocess.run(["docker", "inspect", "--format={{.State.Health.Status}}", "pyspark"], capture_output=True, text=True)
-    if health.stdout.strip() == "healthy":
-        print("Jupyter notebook is available.")
-        break
-    print("Still waiting for pyspark-notebook container to be healthy...")
-    time.sleep(5)
+# Wait for all the containers to become healthy
+print("Waiting for containers to become healthy...")
+while not (is_container_healthy("postgres") and is_container_healthy("broker")):
+    time.sleep(5)  # Adjust the interval between checks if needed
 
-print("Extracting URL from container logs...")
-
-# Get the URL from the logs
-logs = subprocess.run(["docker-compose", "logs", "pyspark"], capture_output=True, text=True)
-url_match = re.search(r'(http://127\.0\.0\.1:8888/lab\?token=\S+)', logs.stdout)
-if url_match:
-    url = url_match.group(0)
-    print("Jupyter notebook is available at:")
-    print(url)
-else:
-    print("Failed to retrieve URL.")
+# Once both containers are healthy, run the script inside the pyspark container
+print("All containers are healthy. Proceeding to run the script.")
+subprocess.run(["docker", "exec", "pyspark", "python", "run_all.py"], check=True)

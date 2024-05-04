@@ -4,13 +4,12 @@ from pyspark.sql.functions import sum as _sum
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType
 from time import sleep
 
-TIMEOUT = 300
 
 if __name__ == "__main__":
     # Initialize SparkSession
     spark = (SparkSession.builder
              .appName("ElectionAnalysis")
-             .master("spark://spark-master:7077")  
+             .master("local[*]") 
              .config("spark.driver.bindAddress", "pyspark")
              .config("spark.jars.packages",
                      "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0")  # Spark-Kafka integration # org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0 org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.1 org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0
@@ -75,9 +74,7 @@ if __name__ == "__main__":
 
 
     # Write aggregated data to Kafka topics ('aggregated_votes_per_candidate')
-    votes_per_candidate_to_kafka = votes_per_candidate \
-        .selectExpr("CAST(candidate_id AS STRING) AS key", 
-                    "to_json(struct(*)) AS value") \
+    votes_per_candidate_to_kafka = votes_per_candidate.selectExpr("to_json(struct(*)) AS value") \
         .writeStream \
         .format("kafka") \
         .option("kafka.bootstrap.servers", "broker:29092") \
@@ -86,7 +83,14 @@ if __name__ == "__main__":
         .outputMode("update") \
         .start()
 
-    sleep(TIMEOUT)
+    turnout_by_location_to_kafka = turnout_by_location.selectExpr("to_json(struct(*)) AS value") \
+        .writeStream \
+        .format("kafka") \
+        .option("kafka.bootstrap.servers", "broker:29092") \
+        .option("topic", "aggregated_turnout_by_location") \
+        .option("checkpointLocation", "./checkpoints/checkpoint2") \
+        .outputMode("update") \
+        .start()
 
     # Await termination for the streaming queries
-    votes_per_candidate_to_kafka.stop()
+    votes_per_candidate_to_kafka.awaitTermination()

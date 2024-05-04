@@ -4,17 +4,17 @@ __pycache__/
 *$py.class
 
 # Jupyter Notebook
-scripts/.ipython
-scripts/.ipynb_checkpoints
-scripts/.jupyter
-scripts/.local
-scripts/.npm
-scripts/.ivy2
-scripts/.scala_history
+scripts/spark/.ipython
+scripts/spark/.ipynb_checkpoints
+scripts/spark/.jupyter
+scripts/spark/.local
+scripts/spark/.npm
+scripts/spark/.ivy2
+scripts/spark/.scala_history
 
 # PySpark
-scripts/checkpoints/checkpoint1/*
-scripts/checkpoints/checkpoint2/*
+scripts/spark/checkpoints/checkpoint1/*
+scripts/spark/checkpoints/checkpoint2/*
 
 # MacOS
 .DS_Store
