@@ -19,7 +19,6 @@ def create_kafka_consumer(topic_name):
     return consumer
 
 # Function to fetch voting statistics from PostgreSQL database
-@st.cache_data
 def fetch_voting_stats():
     # Connect to PostgreSQL database
     conn = psycopg2.connect("host=postgres dbname=voting user=postgres password=postgres")
@@ -130,73 +129,77 @@ def paginate_table(table_data):
 
 # Function to update data displayed on the dashboard
 def update_data():
-    # Placeholder to display last refresh time
-    last_refresh = st.empty()
-    last_refresh.text(f"Last refreshed at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    try:
+        # Placeholder to display last refresh time
+        last_refresh = st.empty()
+        last_refresh.text(f"Last refreshed at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # Fetch voting statistics
-    voters_count, candidates_count = fetch_voting_stats()
+        # Fetch voting statistics
+        voters_count, candidates_count = fetch_voting_stats()
 
-    # Display total voters and candidates metrics
-    st.markdown("""---""")
-    col1, col2 = st.columns(2)
-    col1.metric("Total Voters", voters_count)
-    col2.metric("Total Candidates", candidates_count)
+        # Display total voters and candidates metrics
+        st.markdown("""---""")
+        col1, col2 = st.columns(2)
+        col1.metric("Total Voters", voters_count)
+        col2.metric("Total Candidates", candidates_count)
 
-    # Fetch data from Kafka on aggregated votes per candidate
-    consumer = create_kafka_consumer("aggregated_votes_per_candidate")
-    data = fetch_data_from_kafka(consumer)
-    results = pd.DataFrame(data)
+        # Fetch data from Kafka on aggregated votes per candidate
+        consumer = create_kafka_consumer("aggregated_votes_per_candidate")
+        data = fetch_data_from_kafka(consumer)
+        results = pd.DataFrame(data)
 
-    # Identify the leading candidate
-    results = results.loc[results.groupby('candidate_id')['total_votes'].idxmax()]
-    leading_candidate = results.loc[results['total_votes'].idxmax()]
+        # Identify the leading candidate
+        results = results.loc[results.groupby('candidate_id')['total_votes'].idxmax()]
+        leading_candidate = results.loc[results['total_votes'].idxmax()]
 
-    # Display leading candidate information
-    st.markdown("""---""")
-    st.header('Leading Candidate')
-    col1, col2 = st.columns(2)
-    with col1:
-        st.image(leading_candidate['photo_url'], width=200)
-    with col2:
-        st.header(leading_candidate['candidate_name'])
-        st.subheader(leading_candidate['party_affiliation'])
-        st.subheader("Total Vote: {}".format(leading_candidate['total_votes']))
+        # Display leading candidate information
+        st.markdown("""---""")
+        st.header('Leading Candidate')
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(leading_candidate['photo_url'], width=200)
+        with col2:
+            st.header(leading_candidate['candidate_name'])
+            st.subheader(leading_candidate['party_affiliation'])
+            st.subheader("Total Vote: {}".format(leading_candidate['total_votes']))
 
-    # Display statistics and visualizations
-    st.markdown("""---""")
-    st.header('Statistics')
-    results = results[['candidate_id', 'candidate_name', 'party_affiliation', 'total_votes']]
-    results = results.reset_index(drop=True)
-    col1, col2 = st.columns(2)
+        # Display statistics and visualizations
+        st.markdown("""---""")
+        st.header('Statistics')
+        results = results[['candidate_id', 'candidate_name', 'party_affiliation', 'total_votes']]
+        results = results.reset_index(drop=True)
+        col1, col2 = st.columns(2)
 
-    # Display bar chart and donut chart
-    with col1:
-        bar_fig = plot_colored_bar_chart(results)
-        st.pyplot(bar_fig)
+        # Display bar chart and donut chart
+        with col1:
+            bar_fig = plot_colored_bar_chart(results)
+            st.pyplot(bar_fig)
 
-    with col2:
-        donut_fig = plot_donut_chart(results, title='Vote Distribution')
-        st.pyplot(donut_fig)
+        with col2:
+            donut_fig = plot_donut_chart(results, title='Vote Distribution')
+            st.pyplot(donut_fig)
 
-    # Display table with candidate statistics
-    st.table(results)
+        # Display table with candidate statistics
+        st.table(results)
 
-    # Fetch data from Kafka on aggregated turnout by location
-    location_consumer = create_kafka_consumer("aggregated_turnout_by_location")
-    location_data = fetch_data_from_kafka(location_consumer)
-    location_result = pd.DataFrame(location_data)
+        # Fetch data from Kafka on aggregated turnout by location
+        location_consumer = create_kafka_consumer("aggregated_turnout_by_location")
+        location_data = fetch_data_from_kafka(location_consumer)
+        location_result = pd.DataFrame(location_data)
 
-    # Identify locations with maximum turnout
-    location_result = location_result.loc[location_result.groupby('state')['count'].idxmax()]
-    location_result = location_result.reset_index(drop=True)
+        # Identify locations with maximum turnout
+        location_result = location_result.loc[location_result.groupby('state')['count'].idxmax()]
+        location_result = location_result.reset_index(drop=True)
 
-    # Display location-based voter information with pagination
-    st.header("Location of Voters")
-    paginate_table(location_result)
+        # Display location-based voter information with pagination
+        st.header("Location of Voters")
+        paginate_table(location_result)
 
-    # Update the last refresh time
-    st.session_state['last_update'] = time.time()
+        # Update the last refresh time
+        st.session_state['last_update'] = time.time()
+
+    except Exception as e:
+        st.warning("Data is still processing ...")
 
 # Sidebar layout
 def sidebar():

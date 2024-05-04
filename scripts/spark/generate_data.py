@@ -8,7 +8,7 @@ import sys
 
 BASE_URL = 'https://randomuser.me/api/?nat=gb'
 PARTIES = ["ECORP Party", "SEP Party", "SV Party"]
-NUM_VOTERS = 1000
+NUM_VOTERS = 500
 
 random.seed(12)
 def create_tables(conn, cur):

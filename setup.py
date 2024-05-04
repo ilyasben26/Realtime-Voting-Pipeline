@@ -17,3 +17,10 @@ while not (is_container_healthy("postgres") and is_container_healthy("broker")):
 # Once both containers are healthy, run the script inside the pyspark container
 print("All containers are healthy. Proceeding to run the script.")
 subprocess.run(["docker", "exec", "pyspark", "python", "run_all.py"], check=True)
+
+# Wait for the Streamlit container to become healthy
+print("Waiting for the Streamlit container to become healthy...")
+while not is_container_healthy("streamlit"):
+    time.sleep(5)  # Adjust the interval between checks if needed
+
+print("Streamlit app accessible at: http://localhost:8501")
