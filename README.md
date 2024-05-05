@@ -28,7 +28,7 @@ A real-time voting system that uses Apache Kafka, PostgreSQL, Apache Spark, Apac
 git clone https://github.com/ilyasben26/Realtime-Voting-Pipeline
 ```
 
-2.
+2. Run docker compose
 
 ```
 docker-compose -up -d
