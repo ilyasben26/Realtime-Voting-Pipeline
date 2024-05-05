@@ -6,7 +6,7 @@ from confluent_kafka import SerializingProducer
 from tqdm import tqdm
 import sys
 
-BASE_URL = 'https://randomuser.me/api/?nat=gb'
+API_URL = 'https://randomuser.me/api/?nat=gb'
 PARTIES = ["ECORP Party", "SEP Party", "SV Party"]
 NUM_VOTERS = 500
 
@@ -57,7 +57,7 @@ def create_tables(conn, cur):
     conn.commit()
 
 def generate_voter_data():
-    response = requests.get(BASE_URL)
+    response = requests.get(API_URL)
     if response.status_code == 200:
         user_data = response.json()['results'][0]
         return {
@@ -85,7 +85,7 @@ def generate_voter_data():
 
 def generate_candidate_data(candidate_number, total_parties):
     # using the randomuser api to get random candidates
-    response = requests.get(BASE_URL + '&gender=male')
+    response = requests.get(API_URL + '&gender=male')
     if response.status_code == 200:
         user_data = response.json()['results'][0]
 
