@@ -53,7 +53,7 @@ def fetch_data_from_kafka(consumer):
 
 # Function to update data displayed on the dashboard
 def update_data():
-    try:
+    #try:
         # Placeholder to display last refresh time
         last_refresh = st.empty()
         last_refresh.text(f"Last refreshed at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -128,9 +128,9 @@ def update_data():
         # Update the last refresh time
         st.session_state['last_update'] = time.time()
 
-    except Exception as e:
-        st.warning("Data is still processing ...")
-        st.warning(e)
+    #except Exception as e:
+        #st.warning("Data is still processing ...")
+        #st.warning(e)
 
 # Sidebar layout
 def sidebar():
